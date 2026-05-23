@@ -1,0 +1,36 @@
+{
+    "name": "wenex-platform/php-sdk",
+    "description": "PHP SDK",
+    "type": "composer-plugin",
+    "license": "Apache-2.0",
+    "homepage": "https://wenex.org/",
+    "authors": [
+        {
+        "name": "Wenex PHP developers",
+        "homepage": "https://github.com/orgs/wenex-org/teams/php-developers"
+        }
+    ],
+    "scripts": {
+        "format": "php-cs-fixer fix -v",
+        "analyze": "phpstan analyse --memory-limit=256M",
+        "test-unit": "phpunit --testsuite Unit"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wenex\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Wenex\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "psr/http-client": "^1.0",
+        "psr/http-message": "^2.0",
+        "psr/http-factory": "^1.1"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95"
+    }
+}
