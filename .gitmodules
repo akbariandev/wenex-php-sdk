@@ -1,3 +1,0 @@
-[submodule "packages/common"]
-	path = packages/common
-	url = ../php-sdk-common.git

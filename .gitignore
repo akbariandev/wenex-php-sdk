@@ -1,3 +1,4 @@
+packages/common/
 /vendor/
 .idea
 .DS_Store
