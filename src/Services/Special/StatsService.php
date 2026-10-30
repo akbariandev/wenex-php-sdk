@@ -23,7 +23,7 @@ class StatsService extends RestfulService
      */
     public function collect(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('collect'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('collect'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['items'];
     }
@@ -37,6 +37,6 @@ class StatsService extends RestfulService
      */
     public function stackup(array $data, array $config = []): array
     {
-        return $this->post($this->url('stackup'), $data, ['query' => Http::get_params($config)]);
+        return $this->post($this->url('stackup'), $data, Http::getOptions($config));
     }
 }

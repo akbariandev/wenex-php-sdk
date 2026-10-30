@@ -22,7 +22,7 @@ class InvoicesService extends RestfulService
      */
     public function payment(string $id, array $config = []): array
     {
-        $response = $this->get($this->url($id . '/payment'), ['query' => Http::get_params($config)]);
+        $response = $this->get($this->url($id . '/payment'), Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }

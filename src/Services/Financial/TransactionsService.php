@@ -23,7 +23,7 @@ class TransactionsService extends RestfulService
      */
     public function init(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('init'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('init'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }
@@ -36,7 +36,7 @@ class TransactionsService extends RestfulService
      */
     public function abort(string $id, array $config = []): array
     {
-        $response = $this->get($this->url($id . '/abort'), ['query' => Http::get_params($config)]);
+        $response = $this->get($this->url($id . '/abort'), Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }
@@ -49,7 +49,7 @@ class TransactionsService extends RestfulService
      */
     public function verify(string $id, array $config = []): array
     {
-        $response = $this->get($this->url($id . '/verify'), ['query' => Http::get_params($config)]);
+        $response = $this->get($this->url($id . '/verify'), Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }

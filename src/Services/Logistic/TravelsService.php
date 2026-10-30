@@ -23,7 +23,7 @@ class TravelsService extends RestfulService
      */
     public function routing(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('routing'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('routing'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }

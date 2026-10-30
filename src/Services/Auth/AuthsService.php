@@ -42,7 +42,7 @@ class AuthsService extends RequestService
      */
     public function check(array $data, array $config = []): array
     {
-        return $this->post($this->url('check'), $data, ['query' => Http::get_params($config)]);
+        return $this->post($this->url('check'), $data, Http::getOptions($config));
     }
 
     /**
@@ -54,7 +54,7 @@ class AuthsService extends RequestService
      */
     public function token(array $data, array $config = []): array
     {
-        return $this->post($this->url('token'), $data, ['query' => Http::get_params($config)]);
+        return $this->post($this->url('token'), $data, Http::getOptions($config));
     }
 
     /**
@@ -65,7 +65,7 @@ class AuthsService extends RequestService
      */
     public function verify(array $config = []): array
     {
-        return $this->get($this->url('verify'), ['query' => Http::get_params($config)]);
+        return $this->get($this->url('verify'), Http::getOptions($config));
     }
 
     /**
@@ -76,7 +76,7 @@ class AuthsService extends RequestService
      */
     public function logout(array $config = []): array
     {
-        return $this->get($this->url('logout'), ['query' => Http::get_params($config)]);
+        return $this->get($this->url('logout'), Http::getOptions($config));
     }
 
     /**
@@ -88,6 +88,6 @@ class AuthsService extends RequestService
      */
     public function can(array $data, array $config = []): array
     {
-        return $this->post($this->url('can'), $data, ['query' => Http::get_params($config)]);
+        return $this->post($this->url('can'), $data, Http::getOptions($config));
     }
 }

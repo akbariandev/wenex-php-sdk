@@ -23,7 +23,7 @@ class SmssService extends RestfulService
      */
     public function send(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('send'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('send'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }
@@ -35,9 +35,9 @@ class SmssService extends RestfulService
      * @param array<string, mixed> $config
      * @return array<string, mixed>
      */
-    public function send_by_template(array $data, array $config = []): array
+    public function sendByTemplate(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('send/template'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('send/template'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }

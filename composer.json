@@ -14,9 +14,8 @@
         "format": "php-cs-fixer fix -v",
         "analyze": "phpstan analyse --memory-limit=256M",
         "test-unit": "phpunit --testsuite Unit",
-        "git": "bash ./scripts/git-submodule.sh",
-        "git:clone": "git submodule update --init --recursive",
-        "git:remote:add": "bash ./scripts/git-remote-add.sh"
+        "common:clone": "bash ./scripts/common-clone.sh",
+        "common:update": "bash ./scripts/common-update.sh"
     },
     "autoload": {
         "psr-4": {

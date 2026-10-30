@@ -1778,7 +1778,7 @@
         },
         {
             "name": "wenex-platform/php-sdk-common",
-            "version": "dev-main",
+            "version": "dev-7a7bd85d54d0ce6c7aa58d64b963ba5e3b5f44a2",
             "dist": {
                 "type": "path",
                 "url": "packages/common",

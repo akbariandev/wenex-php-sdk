@@ -24,8 +24,7 @@ class PostsService extends RestfulService
      */
     public function search(array $request, array $filter = [], array $config = []): array
     {
-        $params = Http::get_params($config, $filter);
-        $response = $this->post($this->url('search'), $request, ['query' => $params]);
+        $response = $this->post($this->url('search'), $request, Http::getOptions($config, $filter));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }

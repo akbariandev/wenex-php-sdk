@@ -21,9 +21,9 @@ class LocationsService extends RestfulService
      * @param array<string, mixed> $config
      * @return array<string, mixed>
      */
-    public function address_lookup(array $data, array $config = []): array
+    public function addressLookup(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('address-lookup'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('address-lookup'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }
@@ -35,9 +35,9 @@ class LocationsService extends RestfulService
      * @param array<string, mixed> $config
      * @return array<int, mixed>
      */
-    public function geocode_lookup(array $data, array $config = []): array
+    public function geocodeLookup(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('geocode-lookup'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('geocode-lookup'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['items'];
     }

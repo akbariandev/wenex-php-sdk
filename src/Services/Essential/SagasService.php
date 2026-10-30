@@ -25,7 +25,7 @@ class SagasService extends RestfulService
      */
     public function start(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('start'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('start'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }
@@ -39,7 +39,7 @@ class SagasService extends RestfulService
      */
     public function add(array $data, array $config = []): array
     {
-        $response = $this->post($this->url('add'), $data, ['query' => Http::get_params($config)]);
+        $response = $this->post($this->url('add'), $data, Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }
@@ -52,7 +52,7 @@ class SagasService extends RestfulService
      */
     public function abort(string $id, array $config = []): array
     {
-        $response = $this->get($this->url($id . '/abort'), ['query' => Http::get_params($config)]);
+        $response = $this->get($this->url($id . '/abort'), Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }
@@ -65,7 +65,7 @@ class SagasService extends RestfulService
      */
     public function commit(string $id, array $config = []): array
     {
-        $response = $this->get($this->url($id . '/commit'), ['query' => Http::get_params($config)]);
+        $response = $this->get($this->url($id . '/commit'), Http::getOptions($config));
 
         return $config['fullResponse'] ?? false ? $response : $response['data'];
     }

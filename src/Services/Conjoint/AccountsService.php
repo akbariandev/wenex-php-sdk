@@ -22,6 +22,6 @@ class AccountsService extends RestfulService
      */
     public function cred(array $config = []): array
     {
-        return $this->post($this->url('cred'), [], ['query' => Http::get_params($config)]);
+        return $this->post($this->url('cred'), [], Http::getOptions($config));
     }
 }
