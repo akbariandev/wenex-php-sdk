@@ -24,13 +24,18 @@ class AuthsService extends RequestService
     }
 
     /**
-     * Build an auth-scoped URL: {prefix}auth/{path}.
+     * Build an auth-scoped URL: {prefix}/auth/{path}.
+     *
+     * Mirrors RestfulService: prefixes without a trailing slash are
+     * normalized, and each path segment is rawurlencoded.
      */
     protected function url(string $path, ?string $prefix = null): string
     {
-        $prefix = $prefix ?? $this->pathPrefix;
+        $pfx = $prefix ?? $this->pathPrefix;
 
-        return ($prefix ?: '/') . 'auth/' . $path;
+        return ($pfx !== '' ? rtrim($pfx, '/') : '')
+            . '/auth/'
+            . implode('/', array_map('rawurlencode', explode('/', $path)));
     }
 
     /**

@@ -15,9 +15,12 @@ class LocationsService extends RestfulService
     }
 
     /**
-     * Resolve a free-text address to a place (single result).
+     * Reverse-geocode coordinates to the nearest place (single result).
      *
-     * @param array<string, mixed> $data
+     * @param array{lat: float, lon: float, lang?: string} $data
+     *
+     * @see \WenexPlatform\PhpSdkCommon\Interfaces\Logistic\Locations\AddressLookup
+     *
      * @param array<string, mixed> $config
      * @return array<string, mixed>
      */
@@ -29,9 +32,12 @@ class LocationsService extends RestfulService
     }
 
     /**
-     * Geocode coordinates/address to candidate places (multiple results).
+     * Geocode a free-text query to candidate places (multiple results).
      *
-     * @param array<string, mixed> $data
+     * @param array{query: string, lang?: string} $data
+     *
+     * @see \WenexPlatform\PhpSdkCommon\Interfaces\Logistic\Locations\GeocodeLookup
+     *
      * @param array<string, mixed> $config
      * @return array<int, mixed>
      */

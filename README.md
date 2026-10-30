@@ -1,44 +1,49 @@
 # wenex-platform/php-sdk
 
-PHP SDK for the Wenex platform — a port of the TypeScript `@wenex/sdk`.
+PHP SDK for the Wenex platform.
 
-It wraps a single pre-configured [Guzzle](https://docs.guzzlephp.org/) client and
+- It wraps a single pre-configured [Guzzle](https://docs.guzzlephp.org/) client and
 exposes each platform domain (auth, identity, financial, …) as a lazily-built
 service aggregator. All reusable HTTP plumbing (the `RestfulService` CRUD base,
 `GraphqlService`, enums, models, crypto helpers) comes from the companion package
-`[wenex-platform/php-sdk-common](../php-sdk-common)`.
+`wenex-platform/php-sdk-common`, which lives in its **own repository** and is
+**not tracked by this repository** — `packages/common/` is a local, gitignored
+working copy of it.
+  ## Requirements
+  - PHP >= 8.1, with Composer
+  - Git, with SSH read access to the private `php-sdk-common` repository
 
 ## Install
 
-The SDK depends on the **private** package `wenex-platform/php-sdk-common`, which
-is vendored as a git submodule at `packages/common/` (mirroring how the TypeScript
-`platform-sdk` vendors `platform-sdk-common` at `src/common`). This avoids any
-private-registry/Packagist setup — the common source ships inside this repo.
-
 ```bash
-git clone --recurse-submodules <this-repo-url>
-# or, if already cloned without submodules:
-composer git:clone
+git clone <this-repo-url>
+cd php-sdk
+
+# Bring in the private common package (kept out of version control on purpose).
+# Mirrors the platform-sdk flow: a stage (staging|production) and the wenex
+# domain are mandatory — the package is cloned from git@gitlab.<domain>:wenex/…
+composer common:clone -- staging wenex.org
 
 composer install
 ```
 
-> The submodule uses a **relative** URL (`../php-sdk-common.git`), so it resolves
-> correctly whether you clone from GitHub or the GitLab staging remote. The
-> `composer.json` `repositories` entry points at the local `packages/common` path
-> (`symlink: true`), so `composer install` never needs network access to the
-> private common repo.
+`packages/common` is gitignored and wired as a local Composer path repository
+(symlinked into `vendor/`), so `composer install` resolves it from disk — no
+package registry is involved.
 
-> **End consumers:** if you distribute this SDK to users without private-repo
-> access, either publish a release tag with the submodule pinned, or see the
-> "Deferred / packaging" note below.
+Keep it current with:
 
+```bash
+composer common:update -- staging wenex.org
+```
 
+To develop the common package in place, work directly inside `packages/common`
+(it remains a standalone git checkout of `php-sdk-common`).
 
 ## Usage
 
-Auth is caller-managed, mirroring the TS SDK: you build a Guzzle client with the
-base URI and `Authorization` header, then hand it to the SDK.
+Auth is caller-managed: you build a Guzzle client with the base URI and
+`Authorization` header, then hand it to the SDK.
 
 ```php
 use GuzzleHttp\Client;
@@ -51,116 +56,130 @@ $httpClient = new Client([
 ]);
 
 $platform = Platform::build($httpClient);
+```
 
-// Standard CRUD (find / find_by_id / create / update_by_id / delete_by_id / ...).
-$users = $platform->getIdentity()->getUsers();
-$page = $users->find(['query' => ['status' => 'active'], 'pagination' => ['limit' => 10]]);
-$one  = $users->find_by_id('64a...');
+### Obtaining a token
 
-// Obtain a token via the auth flow, then set it on the shared client for later calls.
-$token = $platform->getAuth()->getAuths()->token([
-    'grant_type' => 'password',
-    'username'   => '...',
-    'password'   => '...',
+The password grant requires your client/app credentials. `response_type`
+must be `'token'` — the platform otherwise defaults password grants to the
+authorization-code flow and returns no bearer token.
+
+```php
+$response = $platform->getAuth()->getAuths()->token([
+    'grant_type'    => 'password',
+    'client_id'     => $clientId,      // platform-issued client id
+    'client_secret' => $clientSecret,
+    'app_id'        => $appId,
+    'domain'        => 'example.com',
+    'username'      => 'user@example.com',
+    'password'      => 'secret',
+    'response_type' => 'token',
+    'scopes'        => ['whole'],
 ]);
 
-// Custom domain methods.
+$accessToken = $response['access_token'];
+// Configure the Guzzle client with this Bearer header, as shown above.
+```
+
+### Querying resources
+
+```php
+$users = $platform->getIdentity()->getUsers();
+
+// List with a Mongo-style filter + pagination.
+$page = $users->find([
+    'query'      => ['status' => 'active'],
+    'pagination' => ['limit' => 10],
+]);
+
+// Single record by ID (null when the record does not exist).
+$one = $users->findById('64a...');
+
+// Count matching documents.
+$total = $users->count(['status' => 'active']);
+```
+
+### Request config
+
+Every method takes an optional request-config array as its last argument. Keys
+that Guzzle understands (`headers`, `timeout`, `sink`, `stream`, ...) are
+forwarded to the request; a few keys are consumed by the SDK:
+
+| Key            | Meaning                                                                 |
+| -------------- | ----------------------------------------------------------------------- |
+| `params`       | Extra query parameters merged with the filter (`['params' => ['zone' => 'own']]`) |
+| `fullResponse` | Return the raw envelope: `{items}` for `find`/`createBulk`, `{data}` for single-record ops, `{total}` for `count`/`updateBulk` |
+| `responseType` | `blob`, `arraybuffer`, `string` or `stream` (file downloads)             |
+| `prefix`       | Per-call path prefix override                                           |
+
+Client-side keys are never serialized into the query string.
+
+```php
+$users->find(['query' => []], ['params' => ['zone' => 'own'], 'headers' => ['X-Request-Id' => '42']]);
+$envelope = $users->find([], ['fullResponse' => true]);
+```
+
+### Custom operations
+
+```php
+use WenexPlatform\PhpSdkCommon\Core\Classes\GraphqlRequest;
+
 $platform->getFinancial()->getTransactions()->init([...]);
 $platform->getTouch()->getEmails()->send([...]);
 $platform->getContent()->getPosts()->search(['query' => ['match' => ['title' => 'hi']]]);
-$platform->getEssential()->getSagas()->getStages();      // sub-service
-$platform->getTouch()->getPushes()->getHistories();      // sub-service
+
+// Nested sub-services.
+$platform->getEssential()->getSagas()->getStages();
+$platform->getTouch()->getPushes()->getHistories();
+
+// File upload (multipart) and download (raw body by default, or a stream).
+$platform->getSpecial()->getFiles()->upload([
+    ['value' => fopen('/path/to/report.pdf', 'r'), 'filename' => 'report.pdf'],
+], 'private');
+
+$contents = $platform->getSpecial()->getFiles()->download('file-id');
+$stream = $platform->getSpecial()->getFiles()->download('file-id', [], 'stream');
 
 // GraphQL.
 $platform->getGraphql()->request(new GraphqlRequest(query: '{ viewer { id } }'));
 ```
 
-
-
 ### Property-style access
 
-For parity with the TS getters (`platform.identity`), PHP exposes both method
-(`$platform->getIdentity()`) and property (`$platform->identity`) access. The
-method form is recommended for clarity and static analysis.
+Every accessor is also available as a property: `$platform->identity->users` is
+equivalent to `$platform->getIdentity()->getUsers()`. The method form is
+recommended for clarity and static analysis.
 
-## Conventions
+## API surface
 
-- **Namespace:** `WenexPlatform\PhpSdk\` (services under `Services\<Domain>\`).
-- **Methods are** `snake_case` (`find_by_id`, `create_bulk`, `restore_by_id`,
-`send_by_template`, `address_lookup`) — matching `php-sdk-common`.
-- **Data is passed as plain** `array` and responses are decoded `array`/`mixed`,
-consistent with `php-sdk-common`'s `RestfulService`. No serializer layer.
-- `fullResponse`: pass `['fullResponse' => true]` in `$config` to receive the
-raw envelope (`{data: …}` / `{items: …}` / `{total: …}`) instead of the
-unwrapped value.
+Every service implements the standard CRUD: `find`, `findById`, `create`,
+`createBulk`, `updateById`, `updateBulk`, `deleteById` (soft delete),
+`restoreById`, `destroyById` (permanent delete), and `count`.
 
+> Some collections do not implement every operation server-side — e.g. bulk
+> update on `identity/users` currently responds with 500 `Method not implemented.` — so `updateBulk` works per collection at the gateway's
+> discretion.
 
+| Domain              | Services (custom methods)                                                |
+| ------------------- | ------------------------------------------------------------------------ |
+| `getAuth()`         | `auths` (`token`, `verify`, `logout`, `check`, `can`), `apts`, `grants`  |
+| `getContext()`      | `configs`, `settings`                                                     |
+| `getDomain()`       | `apps`, `clients`                                                         |
+| `getEssential()`    | `sagas` (`start`, `add`, `abort`, `commit`, `getStages`)                  |
+| `getFinancial()`    | `wallets`, `accounts`, `currencies`, `invoices` (`payment`), `transactions` (`init`, `abort`, `verify`) |
+| `getGeneral()`      | `events`, `comments`, `artifacts`, `workflows`, `activities`              |
+| `getIdentity()`     | `users`, `profiles`, `sessions`                                           |
+| `getSpecial()`      | `files` (`download`, `upload`, `share`), `stats` (`collect`, `stackup`)   |
+| `getTouch()`        | `emails` (`send`), `smss` (`send`, `sendByTemplate`), `pushes` (`send`, `getHistories`), `notices` |
+| `getContent()`      | `notes`, `posts` (`search`), `tickets`                                    |
+| `getLogistic()`     | `cargoes`, `drivers`, `vehicles`, `travels` (`routing`), `locations` (`addressLookup`, `geocodeLookup`) |
+| `getConjoint()`     | `members`, `accounts` (`cred`), `channels`, `contacts`, `messages` (`search`) |
+| `getCareer()`       | `stocks`, `stores`, `products` (`search`), `branches`, `services`, `customers`, `employees`, `businesses` |
+| `getThing()`        | `devices`, `sensors`, `metrics`                                           |
+| `getGraphql()`      | GraphQL endpoint (`request`)                                              |
 
-## TypeScript → PHP accessor mapping
-
-
-| TS (`platform.<domain>.<svc>`) | PHP (`$platform->get<Domain>()->get<Svc>()`) |
-| ------------------------------ | -------------------------------------------- |
-| `auth.auths`                   | `getAuth()->getAuths()`                      |
-| `identity.users`               | `getIdentity()->getUsers()`                  |
-| `financial.transactions`       | `getFinancial()->getTransactions()`          |
-| `essential.sagas.stages`       | `getEssential()->getSagas()->getStages()`    |
-| `touch.pushes.histories`       | `getTouch()->getPushes()->getHistories()`    |
-| `special.files`                | `getSpecial()->getFiles()`                   |
-| `content.posts`                | `getContent()->getPosts()`                   |
-| `graphql`                      | `getGraphql()`                               |
-
-
-
-
-## Deferred features
-
-The following are intentionally **not yet implemented** (the surface exists but
-throws `BadMethodCallException`):
-
-- `cursor()` **SSE streaming** — the TS SDK streams `GET {path}/cursor` via
-Server-Sent Events. A PHP equivalent needs a streaming Guzzle reader plus an
-SSE frame parser.
-- `files.upload()` **multipart upload** — awaiting a clean PHP equivalent of the
-TS `{ value: Blob, filename?: string }[]` shape.
-
-All other services and custom methods match the TS surface 1:1.
-
-## Development
-
-
-
-## Git workflow (submodules)
-
-Mirrors the TypeScript `platform-sdk` scripts (`scripts/git-submodule.sh`,
-`scripts/git-remote-add.sh`):
-
-```bash
-composer git:clone                        # init/update the packages/common submodule
-
-composer git -- status                    # run any git command in the parent repo
-                                          # AND every submodule (note the "--")
-
-composer git -- checkout main             # e.g. move both repos to main
-
-composer git:remote:add staging wenex.org # add GitLab remotes (staging|production)
-                                          # for php-sdk AND php-sdk-common, push main
-```
-
-After `git flow release|hotfix finish`, the `composer git --` passthrough also
-pushes tags in the parent repo and all submodules.
-
-## Development
-
-```bash
-composer git:clone    # vendor php-sdk-common (first time)
-composer install      # resolves common from packages/common
-composer test-unit    # PHPUnit
-composer analyze      # PHPStan (level 5)
-composer format       # PHP-CS-Fixer (PSR-12)
-```
-
-
+Access any service via `$platform->get<Domain>()->get<Service>()`, e.g.
+`$platform->getFinancial()->getTransactions()`.
 
 ## License
 
